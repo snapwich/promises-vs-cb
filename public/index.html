@@ -1,0 +1,85 @@
+<html>
+	<head>
+		<script>
+
+			var order = ['promise-ajax', 'ajax', 'fetch'];
+
+			function work(type, time) {
+				function sleep(milliseconds) {
+					let start = new Date().getTime();
+					while((new Date().getTime() - start) < milliseconds) {}
+				}
+
+				performance.mark(`work_${type}_start`);
+				console.log("working for " + type);
+				sleep(time);
+				performance.mark(`work_${type}_end`);
+				performance.measure(`work_${type}`, `work_${type}_start`, `work_${type}_end`);
+			}
+
+		</script>
+
+		<script src="scripts/ajax.js"></script>
+		<script>
+			var type = "script";
+		</script>
+		<script src="scripts/requests.js"></script>
+		<script>
+			work(type, 1000);
+		</script>
+		<script>
+			type = "async";
+		</script>
+		<script async src="scripts/requests.js"></script>
+		<script>
+			work(type, 1000);
+		</script>
+		<script>
+			type = "inline";
+
+			(function(type, order) {
+				let request = 'http://localhost:8080/timed?delay=200&type=' + type;
+
+				let requests = {
+					'promise-ajax': function() {
+						performance.mark(`promise-ajax_${type}_request`);
+						ajax(request).then(function(res) {
+							Promise.resolve(res).then(function(res) {
+								performance.mark(`promise-ajax_${type}_response`);
+								performance.measure(`promise-ajax_${type}_measure`, `promise-ajax_${type}_request`, `promise-ajax_${type}_response`);
+								work(`promise-ajax_${type}_handler`, 1000);
+							});
+						});
+					},
+					'fetch': function() {
+						performance.mark(`fetch_${type}_request`);
+						fetch(request).then(function(res) {
+							performance.mark(`fetch_${type}_response`);
+							performance.measure(`fetch_${type}_measure`, `fetch_${type}_request`, `fetch_${type}_response`);
+							work(`fetch_${type}_handler`, 1000);
+						});
+					},
+					'ajax': function() {
+						performance.mark(`ajax_${type}_request`);
+						ajax(request).then(function(res) {
+							performance.mark(`ajax_${type}_response`);
+							performance.measure(`ajax_${type}_measure`, `ajax_${type}_request`, `ajax_${type}_response`);
+							work(`ajax_${type}_handler`, 1000);
+						});			
+					}
+				};
+
+				console.log(`making ${type} requests in following order:`, order);
+				order.forEach(key => requests[key]());
+
+				return order;
+			})(type, order);
+
+		</script>
+		<script>
+			work(type, 1000);
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
